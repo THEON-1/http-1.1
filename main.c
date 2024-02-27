@@ -1,5 +1,4 @@
 #include "main.h"
-#include <stdlib.h>
 
 #define PROTOCOL_IP 0
 #define THREAD_MAX 10

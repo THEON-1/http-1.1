@@ -10,7 +10,7 @@ struct list *list_initialize() {
 }
 
 void list_append(struct list *l, void *data) {
-    struct element *e;
+    struct list_element *e;
     e = malloc(sizeof *e);
 
     e->data = data;
@@ -30,7 +30,7 @@ void list_append(struct list *l, void *data) {
 }
 
 void list_prepend(struct list *l, void *data) {
-    struct element *e;
+    struct list_element *e;
     e = malloc(sizeof *e);
 
     e->prev = NULL;
@@ -54,7 +54,7 @@ void list_insert(struct list *l, void *data, int position) {
         fprintf(stderr, "list index out of bounds: %i in %i", position, l->size);
         exit(1);
     }
-    struct element *e;
+    struct list_element *e;
     e = malloc(sizeof *e);
     e->data = data;
     if (l->size == 0) {
@@ -71,7 +71,7 @@ void list_insert(struct list *l, void *data, int position) {
         list_append(l, data);
     }
     else if (position > (l->size+1)/2) {
-        struct element *f = l->tail;
+        struct list_element *f = l->tail;
         for (int i = l->size; i >= position; i--) {
             f = f->prev;
         }
@@ -82,7 +82,7 @@ void list_insert(struct list *l, void *data, int position) {
         (l->size)++;
     }
     else {
-        struct element *f = l->head;
+        struct list_element *f = l->head;
         for (int i = 1; i < position; i++) {
             f = f->next;
         }
@@ -92,5 +92,73 @@ void list_insert(struct list *l, void *data, int position) {
         e->prev->next = e;
         (l->size)++;
     }
+}
+
+void *list_get(struct list *l, int position) {
+    if (position > l->size || position < 1) {
+        fprintf(stderr, "list index out of bounds: %i in %i", position, l->size);
+        exit(1);
+    }
+
+    struct list_element *e;
+    if (position > (l->size)/2) {
+        for (int i = l->size; i > position; i--) {
+            e = e->prev;
+        }
+        return e->data;
+    }
+    else {
+        for (int i = 1; i < position; i++) {
+            e = e->next;
+        }
+        return e->data;
+    }
+}
+
+void *list_remove(struct list *l, int position) {
+    if (position > l->size || position < 1) {
+        fprintf(stderr, "list index out of bounds: %i in %i", position, l->size);
+        exit(1);
+    }
+
+    struct list_element *e;
+    void *data;
+    if (position == 1) {
+        e = l->head;
+        l->head = e->next;
+        l->head->prev = NULL;
+    }
+    else if (position == l->size) {
+        e = l->tail;
+        l->tail = e->prev;
+        l->tail->next = NULL;
+    }
+    else if (position > (l->size)/2) {
+        for (int i = l->size; i > position; i--) {
+            e = e->prev;
+        }
+        e->prev->next = e->next;
+        e->next->prev = e->prev;
+    }
+    else {
+        for (int i = 1; i < position; i++) {
+            e = e->next;
+        }
+        e->prev->next = e->next;
+        e->next->prev = e->prev;
+    }
+    data = e->data;
+    free(e);
+    return data;
+}
+
+void list_free(struct list *l) {
+    struct list_element *e;
+    while ((e = l->head) != NULL) {
+        l->head = e->next;
+        free(e->data);
+        free(e);
+    }
+    free(l);
 }
 

@@ -32,8 +32,7 @@ void *stack_pop(struct stack *s) {
 
 void stack_free(struct stack *s) {
     struct stack_element* e;
-    while (s->size > 0) {
-        e = s->head;
+    while ((e = s->head) != NULL) {
         s->head = e->next;
         free(e->data);
         free(e);

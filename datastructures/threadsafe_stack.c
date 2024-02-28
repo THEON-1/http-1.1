@@ -1,9 +1,12 @@
 #include "threadsafe_stack.h"
 
-void threadsafe_stack_initialize(struct threadsafe_stack *s) {
+struct threadsafe_stack *threadsafe_stack_initialize() {
+    struct threadsafe_stack *s;
     s = malloc(sizeof *s);
-    stack_initialize((struct stack*)s);
+    s->s.head = NULL;
+    s->s.size = 0;
     pthread_mutex_init(&s->mutex, NULL);
+    return s;
 }
 
 void threadsafe_stack_push(struct threadsafe_stack *s, void *data) {

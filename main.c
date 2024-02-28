@@ -11,7 +11,7 @@ int main (int argc, char *argv[]) {
     struct sockaddr connection_data;
     pthread_t new_connection;
     struct thread_args *args;
-    struct stack *free_threads;
+    struct threadsafe_stack *free_threads;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -48,11 +48,11 @@ int main (int argc, char *argv[]) {
     args = malloc(sizeof *args);
     for (int i = 0; i < THREAD_MAX; i++){
         pthread_t *thread = malloc(sizeof(pthread_t));
-        stack_push(free_threads, thread);
+        threadsafe_stack_push(free_threads, thread);
     }
     while (1) {
         pthread_t *free_thread;
-        if (free_threads->size == 0) {
+        if (free_threads->s->size == 0) {
             continue;
         }
         if ((status = listen(sockfd, CONNECTION_BACKLOG)) != 0) {
@@ -60,8 +60,8 @@ int main (int argc, char *argv[]) {
             exit(1);
         }
 
-        free_thread = (pthread_t *)stack_pop(free_threads);
-        fprintf(stdout, "free_threads: %i", free_threads->size);
+        free_thread = (pthread_t *)threadsafe_stack_pop(free_threads);
+        fprintf(stdout, "free_threads: %i", free_threads->s->size);
 
         connection_data_size = sizeof connection_data;
         if ((connection = accept(sockfd, &connection_data, &connection_data_size)) == -1) {
@@ -95,7 +95,7 @@ void *httpConnection(struct thread_args *args) {
         fprintf(stdout, "%s\n", msg);
     }
 
-    stack_push(args->free_sockets, args->thread_self);
+    threadsafe_stack_push(args->free_sockets, args->thread_self);
 
     if (status < 0) {
         perror("recv");

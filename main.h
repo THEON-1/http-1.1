@@ -7,13 +7,13 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#include "datastructures/stack.h"
+#include "datastructures/threadsafe_stack.h"
 
 struct thread_args {
          int connection;
          struct sockaddr connection_data;
          socklen_t connection_data_size;
-         struct stack *free_sockets;
+         struct threadsafe_stack *free_sockets;
          pthread_t *thread_self;
 };
 

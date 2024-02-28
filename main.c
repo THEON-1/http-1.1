@@ -5,12 +5,13 @@
 #define CONNECTION_BACKLOG 10
 
 int main (int argc, char *argv[]) {
-    int sockfd, status, yes, connection, free_threads;
+    int sockfd, status, yes, connection;
     struct addrinfo hints, *res, *p, *ipv4;
     socklen_t connection_data_size;
     struct sockaddr connection_data;
     pthread_t new_connection;
     struct thread_args *args;
+    struct stack *free_threads;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -45,9 +46,13 @@ int main (int argc, char *argv[]) {
     }
 
     args = malloc(sizeof *args);
-    free_threads = THREAD_MAX;
+    for (int i = 0; i < THREAD_MAX; i++){
+        pthread_t *thread = malloc(sizeof(pthread_t));
+        stack_push(free_threads, thread);
+    }
     while (1) {
-        if (free_threads == 0) {
+        pthread_t *free_thread;
+        if (free_threads->size == 0) {
             continue;
         }
         if ((status = listen(sockfd, CONNECTION_BACKLOG)) != 0) {
@@ -55,8 +60,8 @@ int main (int argc, char *argv[]) {
             exit(1);
         }
 
-        (free_threads)--;
-        fprintf(stdout, "free_threads: %i", free_threads);
+        free_thread = (pthread_t *)stack_pop(free_threads);
+        fprintf(stdout, "free_threads: %i", free_threads->size);
 
         connection_data_size = sizeof connection_data;
         if ((connection = accept(sockfd, &connection_data, &connection_data_size)) == -1) {
@@ -65,11 +70,13 @@ int main (int argc, char *argv[]) {
         }
 
         args->connection = connection;
-        args->free_sockets = &free_threads;
         args->connection_data = connection_data;
         args->connection_data_size = connection_data_size;
         
-        pthread_create(&new_connection, NULL, (void *)httpConnection, (void *)args);
+        args->thread_self = free_thread;
+        args->free_sockets = free_threads;
+        
+        pthread_create(free_thread, NULL, (void *)httpConnection, (void *)args);
 
     }
     
@@ -88,7 +95,7 @@ void *httpConnection(struct thread_args *args) {
         fprintf(stdout, "%s\n", msg);
     }
 
-    (args->free_sockets)++;
+    stack_push(args->free_sockets, args->thread_self);
 
     if (status < 0) {
         perror("recv");

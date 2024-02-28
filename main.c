@@ -1,7 +1,7 @@
 #include "main.h"
 
 #define PROTOCOL_IP 0
-#define THREAD_MAX 10
+#define THREAD_MAX 3
 #define CONNECTION_BACKLOG 10
 
 int main (int argc, char *argv[]) {
@@ -50,6 +50,7 @@ int main (int argc, char *argv[]) {
         pthread_t *thread = malloc(sizeof(pthread_t));
         threadsafe_stack_push(free_threads, thread);
     }
+    fprintf(stdout, "free threads: %i\n", free_threads->s.size);
     while (1) {
         pthread_t *free_thread;
         if (free_threads->s.size == 0) {
@@ -59,15 +60,15 @@ int main (int argc, char *argv[]) {
             perror("listen");
             exit(1);
         }
-
-        free_thread = (pthread_t *)threadsafe_stack_pop(free_threads);
-        fprintf(stdout, "free_threads: %i", free_threads->s.size);
-
         connection_data_size = sizeof connection_data;
+
         if ((connection = accept(sockfd, &connection_data, &connection_data_size)) == -1) {
             perror("accept");
             exit(1);
         }
+
+        free_thread = (pthread_t *)threadsafe_stack_pop(free_threads);
+        fprintf(stdout, "free threads: %i\n", free_threads->s.size);
 
         args->connection = connection;
         args->connection_data = connection_data;
@@ -77,7 +78,6 @@ int main (int argc, char *argv[]) {
         args->free_sockets = free_threads;
         
         pthread_create(free_thread, NULL, (void *)httpConnection, (void *)args);
-
     }
     
     free(args);
@@ -96,6 +96,7 @@ void *httpConnection(struct thread_args *args) {
     }
 
     threadsafe_stack_push(args->free_sockets, args->thread_self);
+    fprintf(stdout, "free threads: %i\n", args->free_sockets->s.size);
 
     if (status < 0) {
         perror("recv");

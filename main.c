@@ -17,7 +17,6 @@ int main (int argc, char *argv[]) {
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-
     if ((status = getaddrinfo(NULL, "9999", &hints, &res)) != 0) {
         fprintf(stderr, "getaddressinfo error %s\n", gai_strerror(status));
         exit(1);
@@ -46,13 +45,14 @@ int main (int argc, char *argv[]) {
     }
 
     args = malloc(sizeof *args);
+    free_threads = threadsafe_stack_initialize();
     for (int i = 0; i < THREAD_MAX; i++){
         pthread_t *thread = malloc(sizeof(pthread_t));
         threadsafe_stack_push(free_threads, thread);
     }
     while (1) {
         pthread_t *free_thread;
-        if (free_threads->s->size == 0) {
+        if (free_threads->s.size == 0) {
             continue;
         }
         if ((status = listen(sockfd, CONNECTION_BACKLOG)) != 0) {
@@ -61,7 +61,7 @@ int main (int argc, char *argv[]) {
         }
 
         free_thread = (pthread_t *)threadsafe_stack_pop(free_threads);
-        fprintf(stdout, "free_threads: %i", free_threads->s->size);
+        fprintf(stdout, "free_threads: %i", free_threads->s.size);
 
         connection_data_size = sizeof connection_data;
         if ((connection = accept(sockfd, &connection_data, &connection_data_size)) == -1) {

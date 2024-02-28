@@ -1,11 +1,9 @@
 #include "stack.h"
 
-struct stack *stack_initialize() {
-    struct stack *s;
+void stack_initialize(struct stack *s) {
     s = malloc(sizeof *s);
     s->head = NULL;
     s->size = 0;
-    return s;
 }
 
 void stack_push(struct stack *s, void *data) {

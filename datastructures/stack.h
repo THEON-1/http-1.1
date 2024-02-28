@@ -11,7 +11,7 @@ struct stack {
     int size;
 };
 
-struct stack *stack_initialize();
+void stack_initialize(struct stack *s);
 void stack_push(struct stack *s, void *data);
 void *stack_pop(struct stack *s);
 void stack_free(struct stack *s);

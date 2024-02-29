@@ -19,5 +19,5 @@ struct thread_args {
 
 int main(int argc, char *argv[]);
 
-void *httpConnection(struct thread_args *args);
+void *httpConnection(void *void_args);
 

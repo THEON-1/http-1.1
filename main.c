@@ -9,15 +9,20 @@ int main (int argc, char *argv[]) {
     struct addrinfo hints, *res, *p, *ipv4;
     socklen_t connection_data_size;
     struct sockaddr connection_data;
-    pthread_t new_connection;
     struct thread_args *args;
     struct threadsafe_stack *free_threads;
+
+    if (argc != 2) {
+        fprintf(stderr, "invalid number of arguments given!");
+        exit(1);
+    }
+    printf("port given: %s\n", argv[1]);
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    if ((status = getaddrinfo(NULL, "9999", &hints, &res)) != 0) {
+    if ((status = getaddrinfo(NULL, argv[1], &hints, &res)) != 0) {
         fprintf(stderr, "getaddressinfo error %s\n", gai_strerror(status));
         exit(1);
     }
@@ -39,6 +44,7 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
 
+    printf("binding to port %s\n", argv[1]);
     if ((status = bind (sockfd, ipv4->ai_addr, ipv4->ai_addrlen)) != 0) {
         perror("bind");
         exit(1);
@@ -84,7 +90,8 @@ int main (int argc, char *argv[]) {
     freeaddrinfo(res);
 }
 
-void *httpConnection(struct thread_args *args) {
+void *httpConnection(void *void_args) {
+    struct thread_args *args = (struct thread_args *)void_args;
     int status, buffer_size;
     char *msg;
 

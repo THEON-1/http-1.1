@@ -7,14 +7,12 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#include "datastructures/threadsafe_stack.h"
-
 struct thread_args {
-         int connection;
-         struct sockaddr connection_data;
-         socklen_t connection_data_size;
-         struct threadsafe_stack *free_sockets;
-         pthread_t *thread_self;
+    int connection;
+    struct sockaddr connection_data;
+    socklen_t connection_data_size;
+    int *free_threads;
+    pthread_mutex_t *mutex;
 };
 
 int main(int argc, char *argv[]);

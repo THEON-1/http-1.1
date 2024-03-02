@@ -5,12 +5,12 @@
 #define CONNECTION_BACKLOG 10
 
 int main (int argc, char *argv[]) {
-    int sockfd, status, yes, connection;
+    int sockfd, status, yes, free_connections;
     struct addrinfo hints, *res, *p, *ipv4;
-    socklen_t connection_data_size;
     struct sockaddr connection_data;
     struct thread_args *args;
-    struct threadsafe_stack *free_threads;
+    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_t *free_thread = malloc(sizeof(pthread_t));
 
     if (argc != 2) {
         fprintf(stderr, "invalid number of arguments given!");
@@ -19,7 +19,7 @@ int main (int argc, char *argv[]) {
     printf("port given: %s\n", argv[1]);
 
     memset(&hints, 0, sizeof hints);
-   hints.ai_family = AF_INET;
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
     if ((status = getaddrinfo(NULL, argv[1], &hints, &res)) != 0) {
@@ -51,43 +51,44 @@ int main (int argc, char *argv[]) {
     }
 
     args = malloc(sizeof *args);
-    free_threads = threadsafe_stack_initialize();
-    for (int i = 0; i < THREAD_MAX; i++){
-        pthread_t *thread = malloc(sizeof(pthread_t));
-        threadsafe_stack_push(free_threads, thread);
-    }
-    fprintf(stdout, "free threads: %i\n", free_threads->s.size);
+    free_connections = THREAD_MAX;
+    fprintf(stdout, "free threads: %i\n", free_connections);
     while (1) {
-        pthread_t *free_thread;
-        if (free_threads->s.size == 0) {
+        int connection;
+        socklen_t connection_data_size;
+
+        if (free_connections == 0) {
             continue;
         }
+
         if ((status = listen(sockfd, CONNECTION_BACKLOG)) != 0) {
             perror("listen");
             exit(1);
         }
-        connection_data_size = sizeof connection_data;
 
+        connection_data_size = sizeof connection_data;
         if ((connection = accept(sockfd, &connection_data, &connection_data_size)) == -1) {
             perror("accept");
             exit(1);
         }
 
-        free_thread = (pthread_t *)threadsafe_stack_pop(free_threads);
-        fprintf(stdout, "free threads: %i\n", free_threads->s.size);
+        pthread_mutex_lock(&mutex);
+        free_connections--;
+        fprintf(stdout, "free threads: %i\n", free_connections);
+        pthread_mutex_unlock(&mutex);
 
         args->connection = connection;
         args->connection_data = connection_data;
         args->connection_data_size = connection_data_size;
-        
-        args->thread_self = free_thread;
-        args->free_sockets = free_threads;
+        args->free_threads = &free_connections;
+        args->mutex = &mutex;
         
         pthread_create(free_thread, NULL, (void *)httpConnection, (void *)args);
     }
     
     free(args);
     freeaddrinfo(res);
+    free(free_thread);
 }
 
 void *httpConnection(void *void_args) {
@@ -102,8 +103,10 @@ void *httpConnection(void *void_args) {
         fprintf(stdout, "%s\n", msg);
     }
 
-    threadsafe_stack_push(args->free_sockets, args->thread_self);
-    fprintf(stdout, "free threads: %i\n", args->free_sockets->s.size);
+    pthread_mutex_lock(args->mutex);
+    (*args->free_threads)++;
+    fprintf(stdout, "free threads: %i\n", *args->free_threads);
+    pthread_mutex_unlock(args->mutex);
 
     if (status < 0) {
         perror("recv");

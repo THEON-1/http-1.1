@@ -19,7 +19,7 @@ int main (int argc, char *argv[]) {
     printf("port given: %s\n", argv[1]);
 
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
+   hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
     if ((status = getaddrinfo(NULL, argv[1], &hints, &res)) != 0) {

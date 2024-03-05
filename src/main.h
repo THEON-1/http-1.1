@@ -7,13 +7,15 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-struct thread_args {
+#include "parser.h"
+
+typedef struct thread_args{
     int connection;
     struct sockaddr connection_data;
     socklen_t connection_data_size;
     int *free_threads;
     pthread_mutex_t *mutex;
-};
+} thread_args;
 
 int main(int argc, char *argv[]);
 

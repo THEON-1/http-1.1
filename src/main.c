@@ -8,7 +8,7 @@ int main (int argc, char *argv[]) {
     int sockfd, status, yes, free_connections;
     struct addrinfo hints, *res, *p, *ipv4;
     struct sockaddr connection_data;
-    struct thread_args *args;
+    thread_args *args;
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_t *free_thread = malloc(sizeof(pthread_t));
 
@@ -82,7 +82,7 @@ int main (int argc, char *argv[]) {
         args->connection_data_size = connection_data_size;
         args->free_threads = &free_connections;
         args->mutex = &mutex;
-        
+
         pthread_create(free_thread, NULL, (void *)httpConnection, (void *)args);
     }
     
@@ -92,7 +92,7 @@ int main (int argc, char *argv[]) {
 }
 
 void *httpConnection(void *void_args) {
-    struct thread_args *args = (struct thread_args *)void_args;
+    thread_args *args = (thread_args *)void_args;
     int status, buffer_size;
     char *msg;
 

@@ -5,14 +5,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <stdlib.h>
 
 #include "parser.h"
 
 typedef struct thread_args{
-    int connection;
-    struct sockaddr connection_data;
-    socklen_t connection_data_size;
+    connection_data_t data;
     int *free_threads;
     pthread_mutex_t *mutex;
 } thread_args;

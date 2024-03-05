@@ -77,9 +77,10 @@ int main (int argc, char *argv[]) {
         fprintf(stdout, "free threads: %i\n", free_connections);
         pthread_mutex_unlock(&mutex);
 
-        args->connection = connection;
-        args->connection_data = connection_data;
-        args->connection_data_size = connection_data_size;
+        args->data = (connection_data_t){
+            .connection = connection,
+            .connection_data = connection_data,
+            .connection_data_size = connection_data_size};
         args->free_threads = &free_connections;
         args->mutex = &mutex;
 
@@ -93,15 +94,12 @@ int main (int argc, char *argv[]) {
 
 void *httpConnection(void *void_args) {
     thread_args *args = (thread_args *)void_args;
-    int status, buffer_size;
-    char *msg;
+    connection_data_t *conn_data = &args->data;
+    http_data_t *http_data;
+    int status;
 
-    buffer_size = 1024;
-    msg = malloc(sizeof(char) * buffer_size);
-
-    while ((status = recv(args->connection, (void *)msg, buffer_size, 0)) > 0) {
-        fprintf(stdout, "%s\n", msg);
-    }
+    http_data = malloc(sizeof(http_data_t));
+    status = parse_http_data(conn_data, http_data);
 
     pthread_mutex_lock(args->mutex);
     (*args->free_threads)++;
